@@ -1,0 +1,530 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="robots" content="noindex, nofollow">
+<title>Компас целей</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Unbounded:wght@500;700&family=Manrope:wght@400;500;600;700&family=JetBrains+Mono:wght@500&display=swap">
+<style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style>
+<style>
+/* Layout: одна колонка «сейчас» сверху, затем сетка из двух колонок: кто я / колесо, паттерны / правила, чек-лист / кладбище */
+:root{
+  --bg:#eef1f4; --surface:#ffffff; --ink:#18202b; --muted:#5d6878; --line:#d8dee6;
+  --accent:#2b4fd8; --accent-soft:#e3e9fd;
+  --bad:#c2402f; --bad-soft:#fbe7e3; --warn:#a86a08; --warn-soft:#fbf0d9; --ok:#2f7d55; --ok-soft:#e1f2e8;
+  --frozen:#2d7f9c; --frozen-soft:#ddf0f6;
+  --f-display:"Unbounded","Manrope",system-ui,sans-serif;
+  --f-body:"Manrope",system-ui,-apple-system,"Segoe UI",sans-serif;
+  --f-mono:"JetBrains Mono",ui-monospace,Menlo,monospace;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#10141b; --surface:#181e27; --ink:#e7ebf1; --muted:#97a2b3; --line:#2a3240;
+  --accent:#8aa2ff; --accent-soft:#1f2948;
+  --bad:#f08572; --bad-soft:#3a1f1b; --warn:#e6b45a; --warn-soft:#382c14; --ok:#6fcf9b; --ok-soft:#173326;
+  --frozen:#72c4e0; --frozen-soft:#14303a; color-scheme:dark;}}
+:root[data-theme="dark"]{
+  --bg:#10141b; --surface:#181e27; --ink:#e7ebf1; --muted:#97a2b3; --line:#2a3240;
+  --accent:#8aa2ff; --accent-soft:#1f2948;
+  --bad:#f08572; --bad-soft:#3a1f1b; --warn:#e6b45a; --warn-soft:#382c14; --ok:#6fcf9b; --ok-soft:#173326;
+  --frozen:#72c4e0; --frozen-soft:#14303a; color-scheme:dark;}
+
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--ink);font-family:var(--f-body);font-size:15px;line-height:1.55;
+  padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:28px 56px}
+.wrap{max-width:1120px;margin:0 auto;display:flex;flex-direction:column;gap:20px}
+h1,h2,h3{font-family:var(--f-display);font-weight:700;text-wrap:balance;margin:0;letter-spacing:-.01em}
+h1{font-size:clamp(1.6rem,4vw,2.4rem);line-height:1.15}
+h2{font-size:1.02rem;font-weight:500;margin-bottom:14px}
+h3{font-size:.9rem;font-weight:500}
+p{margin:0}
+.eyebrow{font-size:.72rem;letter-spacing:.09em;text-transform:uppercase;color:var(--muted);font-weight:600}
+.mono{font-family:var(--f-mono);font-variant-numeric:tabular-nums}
+.panel{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:22px;min-width:0}
+.grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:20px}
+@media (max-width:820px){.grid{grid-template-columns:1fr}}
+
+/* header */
+header{display:flex;flex-wrap:wrap;justify-content:space-between;align-items:flex-end;gap:12px 24px;padding-bottom:4px}
+header .sub{color:var(--muted);margin-top:8px;max-width:60ch}
+.word{font-family:var(--f-display);color:var(--accent)}
+
+/* now */
+.now{display:grid;grid-template-columns:1.25fr 1fr 1fr;gap:14px}
+@media (max-width:900px){.now{grid-template-columns:1fr}}
+.tile{border-radius:12px;padding:18px;display:flex;flex-direction:column;gap:8px;min-width:0}
+.tile .big{font-family:var(--f-display);font-size:1.25rem;font-weight:700;line-height:1.25}
+.tile.frozen{background:var(--frozen-soft)} .tile.frozen .eyebrow,.tile.frozen .big{color:var(--frozen)}
+.tile.crisis{background:var(--bad-soft)} .tile.crisis .eyebrow,.tile.crisis .big{color:var(--bad)}
+.tile.weak{background:var(--warn-soft)} .tile.weak .eyebrow,.tile.weak .big{color:var(--warn)}
+.count{display:flex;align-items:baseline;gap:8px;margin-top:2px}
+.count b{font-family:var(--f-display);font-size:2.2rem;line-height:1;color:var(--frozen)}
+.pill{display:inline-flex;align-items:center;gap:6px;font-size:.75rem;font-weight:600;padding:3px 10px;border-radius:99px;background:var(--surface);color:var(--ink);border:1px solid var(--line);width:fit-content}
+.dot{width:7px;height:7px;border-radius:50%;background:currentColor}
+
+/* identity */
+.id-list{display:grid;gap:14px}
+.id-row{display:grid;grid-template-columns:130px minmax(0,1fr);gap:14px;padding-bottom:14px;border-bottom:1px solid var(--line)}
+.id-row:last-child{border-bottom:0;padding-bottom:0}
+.id-row .eyebrow{padding-top:3px}
+@media (max-width:480px){.id-row{grid-template-columns:1fr;gap:4px}}
+.formula{display:flex;flex-wrap:wrap;align-items:center;gap:6px}
+.formula span.chip{background:var(--accent-soft);color:var(--accent);padding:4px 10px;border-radius:8px;font-weight:600;font-size:.88rem}
+.formula span.plus{color:var(--muted);font-weight:700}
+blockquote{margin:0;font-weight:600}
+
+/* wheel */
+.wheel{display:grid;grid-template-columns:minmax(0,1fr);gap:12px}
+.radar{width:100%;max-width:360px;margin:0 auto;display:block}
+.radar .ring{fill:none;stroke:var(--line)}
+.radar .axis{stroke:var(--line)}
+.radar .hi{fill:var(--accent-soft);stroke:var(--accent);stroke-width:1.5;fill-opacity:.85}
+.radar .lo{fill:var(--accent);fill-opacity:.18;stroke:var(--accent);stroke-dasharray:3 3}
+.radar text{fill:var(--muted);font-family:var(--f-body);font-size:11px;font-weight:600}
+.radar text.weak{fill:var(--bad)}
+.radar .pt{fill:var(--accent)} .radar .pt.weak{fill:var(--bad)}
+.legend{display:flex;flex-wrap:wrap;gap:12px;font-size:.78rem;color:var(--muted);justify-content:center}
+.legend i{display:inline-block;width:12px;height:12px;border-radius:3px;vertical-align:-2px;margin-right:5px}
+.note{font-size:.82rem;color:var(--muted)}
+
+/* patterns */
+.patterns{display:grid;gap:10px}
+.pat{display:grid;grid-template-columns:minmax(0,1fr);gap:4px;padding:12px 14px;border-radius:10px;border:1px solid var(--line)}
+.pat.main{border-color:var(--bad);background:var(--bad-soft)}
+.pat h3{font-family:var(--f-body);font-weight:700;font-size:.95rem}
+.pat p{font-size:.88rem;color:var(--muted)}
+.pat .fix{color:var(--ink)} .pat .fix b{color:var(--ok)}
+
+/* rules */
+.rules{list-style:none;margin:0;padding:0;display:grid;gap:12px;counter-reset:r}
+.rules li{display:grid;grid-template-columns:34px minmax(0,1fr);gap:12px;align-items:start;counter-increment:r}
+.rules li::before{content:counter(r);font-family:var(--f-display);font-size:.9rem;width:34px;height:34px;border-radius:9px;display:grid;place-items:center;background:var(--accent-soft);color:var(--accent)}
+.rules b{display:block}
+.rules span{color:var(--muted);font-size:.88rem}
+
+/* lila */
+.lila-main{font-family:var(--f-display);font-size:1.15rem;line-height:1.35;color:var(--accent);margin-bottom:14px}
+.moments{display:grid;gap:8px;margin:0;padding:0;list-style:none}
+.moments li{font-size:.9rem;padding-left:14px;border-left:2px solid var(--accent)}
+.moments li span{color:var(--muted)}
+
+/* checklist */
+.progress{display:flex;align-items:center;gap:12px;margin-bottom:14px}
+.bar{flex:1;height:8px;border-radius:99px;background:var(--line);overflow:hidden}
+.bar i{display:block;height:100%;background:var(--ok);width:0;transition:width .3s}
+.checks{list-style:none;margin:0;padding:0;display:grid;gap:4px}
+.checks label{display:grid;grid-template-columns:20px minmax(0,1fr) auto;gap:10px;align-items:start;padding:8px 6px;border-radius:8px;cursor:pointer}
+.checks label:hover{background:var(--bg)}
+.checks input{width:18px;height:18px;margin:2px 0 0;accent-color:var(--ok)}
+.checks input:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.checks input:checked + span{color:var(--muted);text-decoration:line-through}
+.tag{font-size:.7rem;font-weight:700;padding:2px 8px;border-radius:99px;white-space:nowrap}
+.tag.hot{background:var(--bad-soft);color:var(--bad)}
+.tag.jan{background:var(--frozen-soft);color:var(--frozen)}
+.tag.q{background:var(--accent-soft);color:var(--accent)}
+details{margin-top:12px;border-top:1px solid var(--line);padding-top:10px}
+summary{cursor:pointer;font-weight:600;font-size:.9rem;color:var(--muted)}
+summary:focus-visible{outline:2px solid var(--accent);outline-offset:2px;border-radius:4px}
+
+/* graveyard */
+.graves{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:10px}
+.grave{border:1px dashed var(--line);border-radius:10px 10px 4px 4px;padding:12px;font-size:.88rem;display:flex;flex-direction:column;gap:2px}
+.grave b{text-decoration:line-through;text-decoration-color:var(--muted)}
+.grave span{color:var(--muted);font-size:.76rem}
+.stamp{margin-top:14px;font-size:.85rem;color:var(--muted)}
+.stamp b{color:var(--ink)}
+
+/* tribe scenarios */
+.scen{display:grid;gap:8px;margin-top:10px}
+.scen div{display:grid;grid-template-columns:minmax(0,1fr);gap:2px;padding:10px 12px;border-radius:8px;background:var(--bg);font-size:.86rem}
+.scen b{font-size:.84rem}
+
+/* charge/drain */
+.cd{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+@media (max-width:480px){.cd{grid-template-columns:1fr}}
+.cd ul{margin:6px 0 0;padding-left:18px;font-size:.88rem;display:grid;gap:4px}
+.cd .plus{color:var(--ok)} .cd .minus{color:var(--bad)}
+footer{color:var(--muted);font-size:.78rem;text-align:center}
+
+/* tabs */
+.tabs{display:flex;gap:6px;padding:4px;background:var(--surface);border:1px solid var(--line);border-radius:12px;width:fit-content;max-width:100%}
+.tabs button{font:600 .9rem var(--f-body);color:var(--muted);background:none;border:0;padding:8px 16px;border-radius:9px;cursor:pointer}
+.tabs button[aria-selected="true"]{background:var(--accent-soft);color:var(--accent)}
+.tabs button:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.tabpane{display:flex;flex-direction:column;gap:20px}
+
+/* skill tree */
+.st-intro{display:grid;grid-template-columns:minmax(0,1.4fr) minmax(0,1fr);gap:20px;align-items:start}
+@media (max-width:820px){.st-intro{grid-template-columns:1fr}}
+.verdict{display:grid;gap:10px}
+.verdict div{display:flex;justify-content:space-between;gap:10px;padding:10px 12px;border-radius:10px;background:var(--bg);font-size:.88rem}
+.verdict b{font-family:var(--f-display);font-weight:500;font-size:.85rem}
+.tree{display:flex;flex-direction:column;gap:0}
+.base{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;padding:16px;border-radius:14px;border:1px dashed var(--line)}
+.base-h{grid-column:1/-1;display:flex;justify-content:space-between;flex-wrap:wrap;gap:6px}
+@media (max-width:560px){.base{grid-template-columns:1fr}}
+.trunk{height:28px;width:2px;background:var(--line);margin:0 auto}
+.branches{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:16px}
+@media (max-width:900px){.branches{grid-template-columns:1fr}}
+.branch{--c:var(--accent);--cs:var(--accent-soft);background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:18px;display:flex;flex-direction:column;gap:0;min-width:0}
+.branch.tech{--c:var(--frozen);--cs:var(--frozen-soft)}
+.branch.people{--c:var(--warn);--cs:var(--warn-soft)}
+.branch.top{border-color:var(--c);box-shadow:0 0 0 1px var(--c) inset}
+.br-head{display:flex;justify-content:space-between;align-items:baseline;gap:8px;margin-bottom:4px}
+.br-head h2{margin:0;color:var(--c)}
+.br-role{font-size:.8rem;color:var(--muted);margin-bottom:12px}
+.meters{display:grid;gap:6px;margin-bottom:14px;padding-bottom:14px;border-bottom:1px solid var(--line)}
+.meter{display:grid;grid-template-columns:110px auto;gap:8px;align-items:center;font-size:.8rem;color:var(--muted)}
+.meter .dots{display:flex;gap:4px}
+.meter button{width:20px;height:20px;border-radius:50%;border:1.5px solid var(--c);background:none;padding:0;cursor:pointer}
+.meter button.on{background:var(--c)}
+.meter button:focus-visible{outline:2px solid var(--ink);outline-offset:1px}
+.node{display:grid;grid-template-columns:44px minmax(0,1fr);gap:12px;align-items:start;background:none;border:0;padding:0;text-align:left;font:inherit;color:inherit;cursor:pointer;width:100%}
+.node:focus-visible .gem{outline:2px solid var(--ink);outline-offset:2px}
+.gem{width:44px;height:44px;transform:rotate(45deg);border-radius:9px;border:2px solid var(--c);background:var(--surface);display:grid;place-items:center;transition:background .2s}
+.gem span{transform:rotate(-45deg);font-family:var(--f-mono);font-size:.8rem;color:var(--c);font-weight:500}
+.node.lv1 .gem{background:var(--cs)}
+.node.lv2 .gem,.node.lv3 .gem{background:var(--c)}
+.node.lv2 .gem span,.node.lv3 .gem span{color:var(--surface)}
+.node.locked{opacity:.45}
+.node b{display:block;font-size:.92rem}
+.node small{display:block;color:var(--muted);font-size:.8rem;line-height:1.4}
+.node small.next{color:var(--ink);margin-top:3px}
+.node small.next::before{content:"Очко: ";color:var(--c);font-weight:700}
+.link{width:2px;height:18px;background:var(--line);margin:4px 0 4px 21px}
+.link.lit{background:var(--c)}
+.cap{margin-top:6px;padding:12px;border-radius:10px;background:var(--cs);font-size:.85rem}
+.cap b{color:var(--c);font-family:var(--f-display);font-weight:500}
+.how{font-size:.82rem;color:var(--muted);display:flex;flex-wrap:wrap;gap:6px 16px}
+.reset{font:600 .8rem var(--f-body);color:var(--muted);background:none;border:1px solid var(--line);border-radius:8px;padding:6px 12px;cursor:pointer}
+@media (prefers-reduced-motion:reduce){*{transition:none!important}}
+footer a{color:inherit;text-decoration:underline;text-underline-offset:2px}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<header>
+  <div>
+    <div class="eyebrow">Цели и саморазвитие · обновлено <span class="mono">20.11.2026</span></div>
+    <h1>Слово жизни: <span class="word">признание и влияние</span></h1>
+    <p class="sub">Быть замеченным и уважаемым через пользователей своего продукта. Продукт в центре, но с местом для людей.</p>
+  </div>
+</header>
+
+<nav class="tabs" role="tablist" aria-label="Разделы">
+  <button role="tab" id="t-overview" aria-controls="tab-overview" aria-selected="true" data-tab="overview">Обзор</button>
+  <button role="tab" id="t-skills" aria-controls="tab-skills" aria-selected="false" data-tab="skills">Дерево навыков</button>
+</nav>
+
+<!-- ВКЛАДКА: НАВЫКИ -->
+<div class="tabpane" id="tab-skills" role="tabpanel" aria-labelledby="t-skills" hidden>
+  <section class="panel st-intro" aria-labelledby="st-h">
+    <div>
+      <h2 id="st-h">Куда качаться: три школы</h2>
+      <p>Корни дерева из Икигай и формулы мечты: <b>health-tech продукт + команда + авторитет и наставник</b>. Направление ещё не выбрано, поэтому у каждой ветки две шкалы: насколько легко она качается и сколько энергии даёт. Ветка, где обе шкалы высоко, и есть кандидат на главную.</p>
+      <p class="note" style="margin-top:10px">Стартовые уровни и шкалы я поставил по goals.md. Это оценка, а не факт: поправь кликами под себя. Клик по навыку добавляет очко (после максимума сбрасывается на 0).</p>
+    </div>
+    <div class="verdict" id="verdict" aria-live="polite"></div>
+  </section>
+
+  <div class="tree">
+    <section class="base" aria-labelledby="base-h">
+      <div class="base-h"><h2 id="base-h" style="margin:0">Общая база</h2><span class="note">качается для всех веток сразу</span></div>
+      <div id="base-nodes" style="display:contents"></div>
+    </section>
+    <div class="trunk"></div>
+    <div class="branches" id="branches"></div>
+  </div>
+
+  <div class="how"><span>Пустой ромб: не начато. Светлый: 1 очко. Залитый: 2–3 очка.</span><span>Блеклый навык откроется, когда в предыдущем будет хотя бы 1 очко.</span><button class="reset" id="st-reset" type="button">Вернуть мои стартовые оценки</button></div>
+  <p class="note">Очки и шкалы сохраняются только в этом браузере.</p>
+</div>
+
+<!-- ВКЛАДКА: ОБЗОР -->
+<div class="tabpane" id="tab-overview" role="tabpanel" aria-labelledby="t-overview">
+<!-- СЕЙЧАС -->
+<section class="panel" aria-labelledby="now-h">
+  <h2 id="now-h">Что важно сейчас</h2>
+  <div class="now">
+    <div class="tile frozen">
+      <div class="eyebrow">Единственный проект · на паузе</div>
+      <div class="big">Tribe → первый платящий юзер</div>
+      <div class="count"><b class="mono" id="days">—</b><span>дней до проверки разморозки (январь 2027)</span></div>
+      <p class="note">Заморожен 27.10. Новых проектов до января не берём: идея идёт в список, а не в работу.</p>
+    </div>
+    <div class="tile crisis">
+      <div class="eyebrow">Приоритет №1</div>
+      <div class="big">Бабушка</div>
+      <p>После ДТП 01.09 это реальный кризис, а не ещё одна вкладка. Всё остальное подождёт.</p>
+    </div>
+    <div class="tile weak">
+      <div class="eyebrow">Самое слабое в колесе</div>
+      <div class="big">Здоровье и яркость жизни</div>
+      <p>Обе сферы на 1–3 из 10. Сначала база: сон, еда, прогулка. Психотерапия: статус не ясен с 22.02.</p>
+    </div>
+  </div>
+</section>
+
+<div class="grid">
+  <!-- КТО Я -->
+  <section class="panel" aria-labelledby="id-h">
+    <h2 id="id-h">Кто я и куда иду</h2>
+    <div class="id-list">
+      <div class="id-row"><div class="eyebrow">Архетип</div><div><b>Визионер-создатель</b></div></div>
+      <div class="id-row"><div class="eyebrow">Икигай</div><div>Технологический визионер-лидер: стратегия + технологии. Роли <b>CPO / CTO / фаундер</b>.</div></div>
+      <div class="id-row"><div class="eyebrow">Формула мечты</div>
+        <div class="formula"><span class="chip">Health-tech продукт</span><span class="plus">+</span><span class="chip">команда</span><span class="plus">+</span><span class="chip">авторитет и наставник</span></div></div>
+      <div class="id-row"><div class="eyebrow">Успех</div><div>Миллионы пользователей моего продукта. Влияние важнее денег.</div></div>
+      <div class="id-row"><div class="eyebrow">Фундамент</div><blockquote>«Продукт в центре, но оставь место для людей»</blockquote></div>
+    </div>
+    <details>
+      <summary>Что заряжает и что сливает</summary>
+      <div class="cd" style="margin-top:10px">
+        <div><b class="plus">Заряжает</b><ul><li>Незнакомец пишет «это меня спасло»</li><li>Решать боль, которая есть у меня</li><li>Публичное признание работы</li><li>Вести команду к результату</li></ul></div>
+        <div><b class="minus">Сливает</b><ul><li>5 начальников на 1–2 разработчиков</li><li>Работа без влияния на результат</li><li>Одиночество, жизнь в промзоне</li><li>Нет настоящего отдыха</li></ul></div>
+      </div>
+    </details>
+  </section>
+
+  <!-- КОЛЕСО -->
+  <section class="panel wheel" aria-labelledby="w-h">
+    <div><h2 id="w-h" style="margin-bottom:4px">Колесо жизни</h2><p class="note">Замер весной 2026, оценки диапазоном из 10. Пора обновить.</p></div>
+    <svg class="radar" id="radar" viewBox="0 0 360 330" role="img" aria-label="Колесо жизни: финансы и рост 6–7, карьера, отношения, окружение и эмоции 4–5, здоровье и яркость жизни 1–3"></svg>
+    <div class="legend"><span><i style="background:var(--accent-soft);border:1px solid var(--accent)"></i>верх диапазона</span><span><i style="background:var(--accent);opacity:.35"></i>низ диапазона</span><span style="color:var(--bad)"><i style="background:var(--bad)"></i>зона внимания</span></div>
+  </section>
+
+  <!-- ПАТТЕРНЫ -->
+  <section class="panel" aria-labelledby="p-h">
+    <h2 id="p-h">Паттерны, которые тормозят</h2>
+    <div class="patterns">
+      <div class="pat main"><h3>Распыление</h3><p>4 года, много стартов, ни один проект не принёс ни рубля. Дофамин начала → скучная середина → блестящий объект.</p><p class="fix"><b>Противоядие:</b> одно дело на 1–2 недели, «минимальная версия готово».</p></div>
+      <div class="pat"><h3>«Сработает ли?»</h3><p>Нужна гарантия до действия. Силён в расчётах, буксует там, где нужны люди.</p><p class="fix"><b>Противоядие:</b> маленький тест с цифрой через 30 дней.</p></div>
+      <div class="pat"><h3>Продукт как броня</h3><p>«Продукт безопаснее людей». Но признание приходит только от людей.</p><p class="fix"><b>Противоядие:</b> явно вписать людей в план: пользователи, команда, наставничество.</p></div>
+      <div class="pat"><h3>Броня в отношениях</h3><p>Вместо своих чувств говорю «успокойся». Тихая злость из бессилия.</p><p class="fix"><b>Противоядие:</b> назвать чувство вслух.</p></div>
+      <div class="pat"><h3>«Слушаю, но не делаю»</h3><p>Начинаю, отвлекаюсь через ~5 минут, бросаю, теряю результат.</p><p class="fix"><b>Противоядие:</b> сначала база, потом одна маленькая цель.</p></div>
+    </div>
+  </section>
+
+  <!-- ПРАВИЛА + ЛИЛА -->
+  <div style="display:flex;flex-direction:column;gap:20px;min-width:0">
+    <section class="panel" aria-labelledby="r-h">
+      <h2 id="r-h">Правила, к которым возвращаться</h2>
+      <ol class="rules">
+        <li><div><b>Одна вещь</b><span>Новая идея идёт в список, а не в работу.</span></div></li>
+        <li><div><b>30 дней → цифры</b><span>Не ощущения, а числа.</span></div></li>
+        <li><div><b>Минимальная версия готово</b><span>Не идеально, а закончено.</span></div></li>
+        <li><div><b>Не гарантия, а тест</b><span>Вместо «сработает ли?» спросить «как проверить за неделю?»</span></div></li>
+        <li><div><b>Сказать вслух</b><span>Чувство живому человеку, а не «успокойся».</span></div></li>
+      </ol>
+    </section>
+    <section class="panel" aria-labelledby="l-h">
+      <h2 id="l-h">Вывод из игры Лила</h2>
+      <p class="lila-main">Говорить, что чувствую. Живому человеку. Вслух.</p>
+      <ul class="moments">
+        <li>Близкому больно <span>→ не «успокойся», а «мне страшно за тебя».</span></li>
+        <li>Во мне боль или страх <span>→ назвать, а не спрятать.</span></li>
+        <li>Хочется «найти» девушку <span>→ я иду к человеку или от одиночества?</span></li>
+      </ul>
+    </section>
+  </div>
+
+  <!-- ЧЕК-ЛИСТ -->
+  <section class="panel" aria-labelledby="c-h">
+    <h2 id="c-h">Открытые дела</h2>
+    <div class="progress"><div class="bar"><i id="bar"></i></div><span class="mono note" id="pct">0 из 8</span></div>
+    <ul class="checks" id="checks">
+      <li><label><input type="checkbox" id="c1"><span>Продать сумки на Авито за один вечер</span><span class="tag hot">с мая</span></label></li>
+      <li><label><input type="checkbox" id="c2"><span>Практика Лилы: одно настоящее чувство вслух близкому</span><span class="tag hot">раз в месяц</span></label></li>
+      <li><label><input type="checkbox" id="c3"><span>Психотерапия: выяснить и записать статус</span><span class="tag hot">с 22.02</span></label></li>
+      <li><label><input type="checkbox" id="c4"><span>Обновить колесо жизни</span><span class="tag q">раз в квартал</span></label></li>
+      <li><label><input type="checkbox" id="c5"><span>Перечитать «Код твоей жизни v1.0» и сверить с фокусом</span></label></li>
+      <li><label><input type="checkbox" id="c6"><span>Ответить: где в плане на 2027 место для людей?</span></label></li>
+      <li><label><input type="checkbox" id="c7"><span>Проверка Tribe по критериям разморозки</span><span class="tag jan">январь</span></label></li>
+      <li><label><input type="checkbox" id="c8"><span>Перед любым новым проектом: сверка с кладбищем и правилом «одна вещь»</span></label></li>
+    </ul>
+    <details>
+      <summary>Из книги Аллена «Множественные источники дохода»</summary>
+      <ul class="checks" style="margin-top:6px">
+        <li><label><input type="checkbox" id="a1"><span>Платить себе первым: 10% с каждого поступления</span></label></li>
+        <li><label><input type="checkbox" id="a2"><span>Одна кредитка, остальные заморозить</span></label></li>
+        <li><label><input type="checkbox" id="a3"><span>30 дней категоризировать расходы</span></label></li>
+        <li><label><input type="checkbox" id="a4"><span>Один резидуальный проект (статья, шаблон, курс)</span></label></li>
+        <li><label><input type="checkbox" id="a5"><span>Список крупных покупок на 90 дней вперёд</span></label></li>
+      </ul>
+    </details>
+    <p class="note" style="margin-top:12px">Отметки сохраняются только в этом браузере.</p>
+  </section>
+
+  <!-- КЛАДБИЩЕ -->
+  <section class="panel" aria-labelledby="g-h">
+    <h2 id="g-h">Кладбище проектов</h2>
+    <div class="graves">
+      <div class="grave"><b>Видимус</b><span>ИИ-видимость бизнесов</span></div>
+      <div class="grave"><b>Канал ИИ + гаджеты</b><span>контент</span></div>
+      <div class="grave"><b>Энергооптимизация</b><span>для Роснефти</span></div>
+      <div class="grave"><b>Парсинг afisha.ru</b><span>на свой сайт</span></div>
+      <div class="grave"><b>PainWise</b><span>идея, не запускался</span></div>
+      <div class="grave"><b>Boomerango</b><span>идея, не запускался</span></div>
+    </div>
+    <p class="stamp"><b>Закрыто.</b> Не возвращаться без отдельного решения. Аудит 17.10: за 5 месяцев ни один не принёс денег.</p>
+    <details>
+      <summary>Как решать про Tribe в январе (правило 30 дней)</summary>
+      <div class="scen">
+        <div><b style="color:var(--ok)">Канал растёт + первые деньги (от 3 000 ₽)</b>Масштабировать: организаторы, парсер, таргет, прайс. Потом сайт и юрист.</div>
+        <div><b style="color:var(--warn)">Канал растёт, денег нет</b>Сменить модель: платные подборки, партнёрки, закрытый клуб. Это пивот, не провал.</div>
+        <div><b style="color:var(--bad)">Канал не растёт</b>Не хвататься за следующий проект. Разобрать, почему.</div>
+      </div>
+      <p class="note" style="margin-top:8px">Смотреть цифры: подписчики (было ~250), люди на событиях, организаторы готовые платить, заплатил ли кто-то хоть 500 ₽.</p>
+    </details>
+  </section>
+</div>
+</div><!-- /tab-overview -->
+
+<footer>Собрано из <a href="goals.html">goals.md</a> · источники: чаты марта–октября 2026</footer>
+</div>
+
+<script>
+(function(){
+  // countdown to Jan 1 2027
+  var now=new Date(), target=new Date(2027,0,1);
+  var d=Math.max(0,Math.ceil((target-now)/86400000));
+  document.getElementById('days').textContent=d;
+
+  // radar
+  var data=[["Карьера",4,5],["Финансы",6,7],["Здоровье",1,3],["Отношения",4,5],["Рост",6,7],["Яркость жизни",1,3],["Окружение",4,5],["Эмоции",4,5]];
+  var cx=180,cy=165,R=110,n=data.length,ns="http://www.w3.org/2000/svg",svg=document.getElementById('radar');
+  function pt(i,v){var a=-Math.PI/2+i*2*Math.PI/n;return [cx+Math.cos(a)*R*v/10,cy+Math.sin(a)*R*v/10];}
+  function el(t,attrs,txt){var e=document.createElementNS(ns,t);for(var k in attrs)e.setAttribute(k,attrs[k]);if(txt)e.textContent=txt;svg.appendChild(e);return e;}
+  [2,4,6,8,10].forEach(function(r){el('polygon',{class:'ring',points:data.map(function(_,i){return pt(i,r).join(',')}).join(' ')});});
+  data.forEach(function(_,i){var p=pt(i,10);el('line',{class:'axis',x1:cx,y1:cy,x2:p[0],y2:p[1]});});
+  el('polygon',{class:'hi',points:data.map(function(d,i){return pt(i,d[2]).join(',')}).join(' ')});
+  el('polygon',{class:'lo',points:data.map(function(d,i){return pt(i,d[1]).join(',')}).join(' ')});
+  data.forEach(function(d,i){
+    var weak=d[2]<=3, p=pt(i,d[2]);
+    el('circle',{class:'pt'+(weak?' weak':''),cx:p[0],cy:p[1],r:weak?4.5:3});
+    var a=-Math.PI/2+i*2*Math.PI/n, lx=cx+Math.cos(a)*(R+18), ly=cy+Math.sin(a)*(R+18);
+    var anchor=Math.abs(Math.cos(a))<0.2?'middle':(Math.cos(a)>0?'start':'end');
+    var t=el('text',{x:lx,y:ly+(Math.sin(a)>0.5?10:Math.sin(a)<-0.5?-4:4),'text-anchor':anchor,class:weak?'weak':''});
+    t.textContent=d[0]+' '+d[1]+'–'+d[2];
+  });
+
+  // checklist persistence
+  var KEY='kompas-checks-v1', state={};
+  try{state=JSON.parse(localStorage.getItem(KEY)||'{}')||{};}catch(e){state={};}
+  var boxes=[].slice.call(document.querySelectorAll('.checks input'));
+  var main=[].slice.call(document.querySelectorAll('#checks input'));
+  function upd(){var done=main.filter(function(b){return b.checked}).length;
+    document.getElementById('bar').style.width=(done/main.length*100)+'%';
+    document.getElementById('pct').textContent=done+' из '+main.length;}
+  boxes.forEach(function(b){b.checked=!!state[b.id];b.addEventListener('change',function(){state[b.id]=b.checked;try{localStorage.setItem(KEY,JSON.stringify(state));}catch(e){}upd();});});
+  upd();
+})();
+
+/* ===== tabs ===== */
+(function(){
+  var tabs=[].slice.call(document.querySelectorAll('.tabs button'));
+  function show(name){
+    if(name!=='skills')name='overview';
+    tabs.forEach(function(b){var on=b.dataset.tab===name;b.setAttribute('aria-selected',on);document.getElementById('tab-'+b.dataset.tab).hidden=!on;});
+  }
+  tabs.forEach(function(b){b.addEventListener('click',function(){location.hash=b.dataset.tab;show(b.dataset.tab);});});
+  window.addEventListener('hashchange',function(){show(location.hash.slice(1));});
+  show(location.hash.slice(1));
+})();
+
+/* ===== skill tree ===== */
+(function(){
+  var BASE=[
+    {id:'b-health',name:'Здоровье',max:3,start:1,desc:'Сон, боль, энергия. Сейчас 1–3 в колесе: это главный потолок для всех веток.',next:'неделя режима: сон, еда, прогулка каждый день'},
+    {id:'b-focus',name:'Фокус «одна вещь»',max:3,start:1,desc:'Противоядие от распыления. Без него очки в ветках не копятся.',next:'одно дело доведено до «минимальная версия готово»'},
+    {id:'b-voice',name:'Сказать вслух',max:3,start:0,desc:'Практика из Лилы. Открывает всё, где нужны люди.',next:'одно настоящее чувство сказано близкому'}
+  ];
+  var BR=[
+    {id:'product',cls:'',name:'Продукт',role:'Путь к CPO · «решать боль, которая есть у меня»',ease:3,energy:4,
+     cap:'<b>CPO health-tech.</b> Продукт, которым пользуются люди с той же болью.',
+     nodes:[
+      {id:'p1',name:'Поиск боли',max:3,start:2,desc:'Видеть проблему, которую стоит решать. PainWise вырос из собственной боли.',next:'5 разговоров с людьми, у которых эта боль есть'},
+      {id:'p2',name:'Тест за неделю',max:3,start:1,desc:'Вместо «сработает ли?» быстрый эксперимент с цифрой.',next:'гипотеза проверена за 7 дней, записан результат'},
+      {id:'p3',name:'Первые деньги',max:3,start:0,desc:'Самый пустой навык за 4 года. Ни один проект не принёс рубля.',next:'кто-то заплатил хоть 500 ₽'},
+      {id:'p4',name:'Стратегия и экспертиза',max:3,start:0,desc:'Авторитет в теме здоровья и медицины. Влияние важнее денег.',next:'публичный разбор рынка (например, трекеров боли)'}
+     ]},
+    {id:'tech',cls:'tech',name:'Технологии',role:'Путь к CTO · «силён там, где всё считается»',ease:5,energy:3,
+     cap:'<b>CTO.</b> Архитектура и техкоманда под свой или чужой продукт.',
+     nodes:[
+      {id:'t1',name:'Разработка и данные',max:3,start:3,desc:'Парсеры, расчёты, ML. Самая прокачанная зона.',next:'уже на максимуме'},
+      {id:'t2',name:'ИИ и автоматизация',max:3,start:2,desc:'Инструменты, которые экономят часы. Страх «ИИ заберёт профессию» превращается в преимущество.',next:'один рабочий процесс автоматизирован ИИ'},
+      {id:'t3',name:'Архитектура систем',max:3,start:1,desc:'Думать системой, а не задачей.',next:'спроектирована и описана схема одного продукта целиком'},
+      {id:'t4',name:'Техстратегия и найм',max:3,start:0,desc:'Решения уровня CTO: что строить, кого брать.',next:'проведено одно собеседование или ревью чужой архитектуры'}
+     ]},
+    {id:'people',cls:'people',name:'Люди и лидерство',role:'Путь к фаундеру и наставнику · «поток, когда веду команду»',ease:1,energy:5,
+     cap:'<b>Фаундер-наставник.</b> Сильная команда и поколение лидеров вокруг.',
+     nodes:[
+      {id:'h1',name:'Говорить с пользователями',max:3,start:1,desc:'Признание приходит только от людей. Здесь броня «продукт безопаснее людей» мешает больше всего.',next:'10 живых разговоров с аудиторией'},
+      {id:'h2',name:'Публичность',max:3,start:1,desc:'Канал ~250 подписчиков. «Чувствовал себя живым, когда работу публично похвалили».',next:'один пост или выступление о своей работе'},
+      {id:'h3',name:'Собрать команду',max:3,start:0,desc:'«Завидую тем, кто собрал сильную команду».',next:'один человек согласился делать что-то вместе'},
+      {id:'h4',name:'Наставничество',max:3,start:1,desc:'Был опыт преподавания, он ранил. Но это прямая часть формулы мечты.',next:'одна менторская встреча с младшим коллегой'}
+     ]}
+  ];
+  var KEY='kompas-skills-v1', st={};
+  try{st=JSON.parse(localStorage.getItem(KEY)||'{}')||{};}catch(e){st={};}
+  function save(){try{localStorage.setItem(KEY,JSON.stringify(st));}catch(e){}}
+  function lv(n){return st[n.id]!=null?st[n.id]:n.start;}
+  function meter(b,k){return st[b.id+'-'+k]!=null?st[b.id+'-'+k]:b[k];}
+  function esc(s){return s;}
+
+  function nodeHTML(n,locked){
+    var l=lv(n);
+    return '<button type="button" class="node lv'+l+(locked?' locked':'')+'" data-id="'+n.id+'" aria-label="'+n.name+': '+l+' из '+n.max+'">'+
+      '<div class="gem"><span>'+l+'/'+n.max+'</span></div>'+
+      '<div><b>'+n.name+'</b><small>'+n.desc+'</small>'+(l<n.max?'<small class="next">'+n.next+'</small>':'')+'</div></button>';
+  }
+  function dots(b,k){
+    var v=meter(b,k),h='';
+    for(var i=1;i<=5;i++)h+='<button type="button" class="'+(i<=v?'on':'')+'" data-m="'+b.id+'-'+k+'" data-v="'+i+'" aria-label="'+i+' из 5"></button>';
+    return h;
+  }
+  function render(){
+    document.getElementById('base-nodes').innerHTML=BASE.map(function(n){return nodeHTML(n,false);}).join('');
+    var scores=BR.map(function(b){return {b:b,s:meter(b,'ease')+meter(b,'energy'),pts:b.nodes.reduce(function(a,n){return a+lv(n)},0),max:b.nodes.length*3};});
+    var best=scores.slice().sort(function(a,c){return c.s-a.s||meter(c.b,'energy')-meter(a.b,'energy');})[0].b.id;
+    document.getElementById('branches').innerHTML=BR.map(function(b,bi){
+      var h='<section class="branch '+b.cls+(b.id===best?' top':'')+'" aria-label="'+b.name+'">'+
+        '<div class="br-head"><h2>'+b.name+'</h2><span class="mono note">'+scores[bi].pts+'/'+scores[bi].max+'</span></div>'+
+        '<div class="br-role">'+b.role+'</div>'+
+        '<div class="meters"><div class="meter"><span>Легко качается</span><div class="dots">'+dots(b,'ease')+'</div></div>'+
+        '<div class="meter"><span>Даёт энергию</span><div class="dots">'+dots(b,'energy')+'</div></div></div>';
+      b.nodes.forEach(function(n,i){
+        var locked=i>0&&lv(b.nodes[i-1])===0;
+        if(i>0)h+='<div class="link'+(lv(b.nodes[i-1])>0&&lv(n)>0?' lit':'')+'"></div>';
+        h+=nodeHTML(n,locked);
+      });
+      return h+'<div class="link"></div><div class="cap">'+b.cap+'</div></section>';
+    }).join('');
+    var byE=scores.slice().sort(function(a,c){return meter(c.b,'ease')-meter(a.b,'ease')})[0].b;
+    var byN=scores.slice().sort(function(a,c){return meter(c.b,'energy')-meter(a.b,'energy')})[0].b;
+    var bestB=BR.filter(function(b){return b.id===best})[0];
+    var html='<div><span>Легче всего качается</span><b>'+byE.name+'</b></div>'+
+      '<div><span>Больше всего энергии</span><b>'+byN.name+'</b></div>'+
+      '<div><span>Сумма двух шкал выше всего</span><b>'+bestB.name+'</b></div>';
+    if(byE.id!==byN.id)html+='<p class="note">Лёгкая ветка и заряжающая не совпадают. Это знакомый паттерн «продукт как броня»: легко уходить туда, где всё считается, а энергия там, где люди. Формула мечты требует обе.</p>';
+    else html+='<p class="note">Лёгкая и заряжающая ветка совпали. Это сильный кандидат на главное направление.</p>';
+    document.getElementById('verdict').innerHTML=html;
+  }
+  var all={};BASE.concat.apply(BASE,BR.map(function(b){return b.nodes})).forEach(function(n){all[n.id]=n;});
+  document.getElementById('tab-skills').addEventListener('click',function(e){
+    var m=e.target.closest('[data-m]');
+    if(m){st[m.dataset.m]=+m.dataset.v;save();render();return;}
+    var nb=e.target.closest('.node');
+    if(nb&&!nb.classList.contains('locked')){var n=all[nb.dataset.id];st[n.id]=(lv(n)+1)%(n.max+1);save();render();
+      var f=document.querySelector('.node[data-id="'+n.id+'"]');if(f)f.focus();}
+  });
+  document.getElementById('st-reset').addEventListener('click',function(){st={};save();render();});
+  render();
+})();
+</script>
+
+</body>
+</html>
